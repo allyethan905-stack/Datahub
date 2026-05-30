@@ -1,0 +1,6 @@
+{
+  "name": "Mahakasa Virtual data store",
+  "description": "Base de données et analyse des matchs, cotes (1-N-2) et classements.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
