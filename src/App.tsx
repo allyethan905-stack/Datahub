@@ -5,7 +5,6 @@ import { LEAGUES, MatchData, generateMatchId, getDailySeason, CalculatorStats, f
 import { getTeamLogo, getLeagueFlag } from './lib/logos';
 import { fetchWithRetry, fetchRoundPlayout, safeParseJSON } from './lib/api';
 import DataExtractionMenu from './components/DataExtractionMenu';
-import { ScanView } from './components/ScanView';
 import LocalDatabaseIndependent from './components/LocalDatabaseIndependent';
 import CalculatorMenu from './components/CalculatorMenu';
 import { toPng } from 'html-to-image';
@@ -13,6 +12,7 @@ import { jsPDF } from 'jspdf';
 import UpcomingRoundsView from './components/UpcomingRoundsView';
 import { findHistoricalMatches } from './services/localArchive';
 import AIFormPatternAssistant from './components/AIFormPatternAssistant';
+import { LasaView } from './components/LasaView';
 
 const APP_PASSWORD = import.meta.env.VITE_APP_PASSWORD || 'admin123';
 
@@ -192,7 +192,7 @@ export default function App() {
 }
 
 function MainApp() {
-  const [activeTab, setActiveTab] = useState<'matches' | 'scan' | 'standings' | 'results' | 'extraction' | 'calculator' | 'local_db' | 'upcoming' | 'bot'>('matches');
+  const [activeTab, setActiveTab] = useState<'matches' | 'lasa' | 'standings' | 'results' | 'extraction' | 'calculator' | 'local_db' | 'upcoming' | 'bot'>('matches');
   
   // Bot States
   const [botEnabled, setBotEnabled] = useState(false);
@@ -2076,101 +2076,141 @@ function MainApp() {
     <div className="min-h-screen bg-slate-800/50 text-slate-100 font-sans text-[11px] sm:text-[12px] selection:bg-blue-100">
       {/* Header */}
       <header className="bg-slate-900 border-b border-slate-800 sticky top-0 z-50 glass-panel">
-        <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="bg-slate-950 p-1.5 rounded-lg shadow-sm">
-              <Database className="w-4 h-4 text-white" />
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 py-2 sm:py-0 flex flex-col sm:flex-row sm:h-14 sm:items-center justify-between gap-2 sm:gap-4">
+          {/* Logo & Bet261 Status Row */}
+          <div className="flex items-center justify-between w-full sm:w-auto gap-3">
+            <div className="flex items-center gap-2">
+              <div className="bg-slate-950 p-1.5 rounded-lg shadow-sm">
+                <Database className="w-3.5 h-3.5 text-white" />
+              </div>
+              <div>
+                <h1 className="text-xs sm:text-sm font-black text-slate-100 uppercase tracking-tighter leading-none">
+                  Mahakasa Virtual
+                </h1>
+                <p className="text-[7.5px] sm:text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-0.5 hidden min-[400px]:block">Data Hub Store</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-sm font-black text-slate-100 uppercase tracking-tighter leading-none">
-                Mahakasa Virtual
-              </h1>
-              <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Data Hub Store</p>
+
+            {/* Bet261 Action on Mobile next to logo */}
+            <div className="flex sm:hidden items-center gap-1.5 shrink-0">
+              {bet261Account ? (
+                <div className="flex items-center gap-1">
+                  <div className="flex items-center bg-slate-800/40 rounded-2xl border border-slate-800 p-0.5 pr-2 shadow-inner">
+                    <div className="w-6 h-6 bg-emerald-500 rounded-lg flex items-center justify-center text-white font-black text-[9px]">
+                      {bet261Account.username?.substring(0, 1) || 'B'}
+                    </div>
+                    <span className="text-[10px] font-black text-white font-mono tracking-tighter ml-1.5">
+                      {(bet261Account.balance || 0).toLocaleString()} <span className="text-[7px] text-emerald-500">AR</span>
+                    </span>
+                  </div>
+                  <button 
+                    onClick={() => {
+                      if (confirm("Voulez-vous vous déconnecter de Bet261 ?")) handleBet261Logout();
+                    }}
+                    className="p-1.5 hover:bg-rose-500/10 rounded-lg text-slate-500 hover:text-rose-500 border border-slate-800"
+                  >
+                    <LogIn className="w-3.5 h-3.5 rotate-180" />
+                  </button>
+                </div>
+              ) : (
+                <button 
+                  onClick={() => setShowBet261Login(true)}
+                  className="flex items-center gap-1 bg-indigo-500/10 border border-indigo-500/15 px-2.5 py-1 rounded-full text-indigo-400"
+                >
+                  <LogIn className="w-3 h-3" />
+                  <span className="text-[8px] font-black uppercase tracking-wider">Bet261</span>
+                </button>
+              )}
             </div>
           </div>
           
-          <div className="flex items-center gap-4">
-            {bet261Account ? (
-              <div className="flex items-center gap-3">
-                <div className="flex items-center bg-slate-800/40 rounded-2xl border border-slate-800 p-1 pr-3 shadow-inner group transition-all hover:bg-slate-800/60">
-                  <div className="w-8 h-8 bg-emerald-500 rounded-xl flex items-center justify-center text-white font-black text-[10px] shadow-lg shadow-emerald-500/20 mr-3 relative overflow-hidden group-hover:scale-105 transition-transform">
-                    <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                    {bet261Account.username?.substring(0, 1) || 'B'}
-                  </div>
-                  <div className="flex flex-col">
-                    <div className="flex items-center gap-2">
-                       <span className="text-[12px] font-black text-white font-mono tracking-tighter">
-                         {(bet261Account.balance || 0).toLocaleString()} 
-                         <span className="text-[8px] text-emerald-500 ml-1">AR</span>
-                       </span>
-                       <button 
-                         onClick={() => refreshBet261Balance(bet261Account.access_token)}
-                         className="p-1 hover:bg-slate-700/50 rounded-md transition-all text-slate-500 hover:text-emerald-400 group/refresh"
-                         title="Rafraîchir le solde"
-                       >
-                         <RefreshCw className="w-3 h-3 group-active/refresh:rotate-180 transition-transform duration-500" />
-                       </button>
+          {/* Controls Area (League selector + sync / Admin states) */}
+          <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto border-t border-slate-800/50 pt-1.5 sm:pt-0 sm:border-t-0">
+            {/* Bet261 Account for Desktop */}
+            <div className="hidden sm:flex items-center gap-3">
+              {bet261Account ? (
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center bg-slate-800/40 rounded-2xl border border-slate-800 p-1 pr-3 shadow-inner group transition-all hover:bg-slate-800/60">
+                    <div className="w-8 h-8 bg-emerald-500 rounded-xl flex items-center justify-center text-white font-black text-[10px] shadow-lg shadow-emerald-500/20 mr-3 relative overflow-hidden group-hover:scale-105 transition-transform">
+                      <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                      {bet261Account.username?.substring(0, 1) || 'B'}
                     </div>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <div className="flex items-center gap-0.5">
-                         <div className="w-1 h-1 bg-emerald-500 rounded-full animate-pulse"></div>
-                         <span className="text-[7px] font-black text-slate-500 uppercase tracking-widest text-[6px] sm:text-[7px]">Connected</span>
+                    <div className="flex flex-col">
+                      <div className="flex items-center gap-2">
+                         <span className="text-[12px] font-black text-white font-mono tracking-tighter">
+                           {(bet261Account.balance || 0).toLocaleString()} 
+                           <span className="text-[8px] text-emerald-500 ml-1">AR</span>
+                         </span>
+                         <button 
+                           onClick={() => refreshBet261Balance(bet261Account.access_token)}
+                           className="p-1 hover:bg-slate-700/50 rounded-md transition-all text-slate-500 hover:text-emerald-400 group/refresh"
+                           title="Rafraîchir le solde"
+                         >
+                           <RefreshCw className="w-3 h-3 group-active/refresh:rotate-180 transition-transform duration-500" />
+                         </button>
                       </div>
-                      {freeBets && freeBets.length > 0 && (
-                        <div className="flex items-center gap-0.5 bg-amber-500/10 border border-amber-500/20 px-1 rounded" title={freeBets.map(fb => `Coupon ID ${fb.id}: ${fb.balance || 0} AR`).join('\n')}>
-                          <Gift className="w-2 h-2 text-amber-400 animate-bounce" />
-                          <span className="text-[6.5px] font-bold text-amber-400 font-mono uppercase">
-                            {freeBets.length} FB
-                          </span>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <div className="flex items-center gap-0.5">
+                           <div className="w-1 h-1 bg-emerald-500 rounded-full animate-pulse"></div>
+                           <span className="text-[7px] font-black text-slate-500 uppercase tracking-widest text-[6px] sm:text-[7px]">Connected</span>
                         </div>
-                      )}
+                        {freeBets && freeBets.length > 0 && (
+                          <div className="flex items-center gap-0.5 bg-amber-500/10 border border-amber-500/20 px-1 rounded" title={freeBets.map(fb => `Coupon ID ${fb.id}: ${fb.balance || 0} AR`).join('\n')}>
+                            <Gift className="w-2 h-2 text-amber-400 animate-bounce" />
+                            <span className="text-[6.5px] font-bold text-amber-400 font-mono uppercase">
+                              {freeBets.length} FB
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
+
+                  <button 
+                    onClick={() => {
+                      if (confirm("Voulez-vous vous déconnecter de Bet261 ?")) handleBet261Logout();
+                    }}
+                    className="p-2 hover:bg-rose-500/10 rounded-xl text-slate-600 hover:text-rose-500 transition-all border border-slate-800 hover:border-rose-500/20 bg-slate-900/50"
+                    title="Déconnexion"
+                  >
+                    <LogIn className="w-4 h-4 rotate-180" />
+                  </button>
                 </div>
-
+              ) : (
                 <button 
-                  onClick={() => {
-                    if (confirm("Voulez-vous vous déconnecter de Bet261 ?")) handleBet261Logout();
-                  }}
-                  className="p-2 hover:bg-rose-500/10 rounded-xl text-slate-600 hover:text-rose-500 transition-all border border-slate-800 hover:border-rose-500/20 bg-slate-900/50"
-                  title="Déconnexion"
+                  onClick={() => setShowBet261Login(true)}
+                  className="flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/20 px-3 py-1.5 rounded-full hover:bg-indigo-500/20 transition-all group"
                 >
-                  <LogIn className="w-4 h-4 rotate-180" />
+                  <LogIn className="w-3 h-3 text-indigo-500 group-hover:scale-110 transition-transform" />
+                  <span className="text-[9px] font-black text-indigo-500 uppercase tracking-widest">Connecter Bet261</span>
                 </button>
-              </div>
-            ) : (
-              <button 
-                onClick={() => setShowBet261Login(true)}
-                className="flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/20 px-3 py-1.5 rounded-full hover:bg-indigo-500/20 transition-all group"
-              >
-                <LogIn className="w-3 h-3 text-indigo-500 group-hover:scale-110 transition-transform" />
-                <span className="text-[9px] font-black text-indigo-500 uppercase tracking-widest">Connecter Bet261</span>
-              </button>
-            )}
+              )}
+            </div>
 
+            {/* League select - compact on mobile, styled nicely */}
             {activeTab !== 'extraction' && (
-              <div className="flex items-center gap-2 bg-slate-800 px-3 py-1.5 rounded-full border border-slate-800">
+              <div className="flex items-center gap-1.5 bg-slate-800 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full border border-slate-700/60 max-w-[170px] sm:max-w-none">
                 <img 
                   src={getLeagueFlag(LEAGUES.find(l => l.id === selectedLeague)?.country)} 
                   alt="" 
-                  className="w-4 h-3 object-contain rounded-sm"
+                  className="w-3.5 h-2.5 sm:w-4 sm:h-3 object-contain rounded-sm"
                   onError={(e) => (e.currentTarget.style.display = 'none')}
                   onLoad={(e) => (e.currentTarget.style.display = 'block')}
                 />
-                <label className="font-bold text-slate-400 uppercase text-[9px] tracking-wider">Ligue:</label>
+                <label className="font-bold text-slate-400 uppercase text-[8px] sm:text-[9px] tracking-wider shrink-0">Ligue:</label>
                 <select 
-                  className="bg-transparent text-slate-100 text-[10px] font-black outline-none cursor-pointer"
+                  className="bg-transparent text-slate-100 text-[9px] sm:text-[10px] font-black outline-none cursor-pointer truncate max-w-[80px] sm:max-w-[120px]"
                   value={selectedLeague}
                   onChange={(e) => setSelectedLeague(Number(e.target.value))}
                 >
                   {LEAGUES.map(league => (
-                    <option key={league.id} value={league.id}>{league.name}</option>
+                    <option key={league.id} className="bg-slate-900 text-slate-200" value={league.id}>{league.name}</option>
                   ))}
                 </select>
               </div>
             )}
             
-            <div className="flex items-center gap-3 pl-4 border-l border-slate-800">
+            <div className="flex items-center gap-2 pl-2 sm:pl-4 border-l border-slate-800/80 shrink-0">
               <div className="hidden sm:flex flex-col items-end">
                 <span className="text-[9px] font-black text-slate-100 uppercase tracking-widest">Admin</span>
                 <span className="text-[8px] text-emerald-500 font-bold uppercase tracking-widest flex items-center gap-1">
@@ -2181,10 +2221,10 @@ function MainApp() {
               <button 
                 onClick={handleManualSync}
                 disabled={isSyncing}
-                className={`bg-slate-800 hover:bg-slate-800/80 p-2 rounded-full border border-slate-800 transition-all duration-300 ${isSyncing ? 'text-emerald-500 animate-spin' : 'text-slate-400 hover:text-emerald-500 hover:border-emerald-200'}`}
+                className={`bg-slate-800 hover:bg-slate-800/80 p-1.5 sm:p-2 rounded-full border border-slate-850 transition-all duration-300 ${isSyncing ? 'text-emerald-500 animate-spin' : 'text-slate-400 hover:text-emerald-500 hover:border-emerald-200'}`}
                 title="Synchroniser maintenant"
               >
-                <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
+                <RefreshCw className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
               </button>
             </div>
           </div>
@@ -2198,7 +2238,7 @@ function MainApp() {
         <div className="flex flex-col sm:flex-row gap-4 mb-6 justify-between items-start sm:items-center">
           <div className="flex bg-slate-900 p-1 rounded-xl border border-slate-800 shadow-sm overflow-x-auto max-w-full no-scrollbar">
             <TabButton icon={<Trophy />} label="Matchs" malagasy="Lalao" active={activeTab === 'matches'} onClick={() => setActiveTab('matches')} />
-            <TabButton icon={<Activity />} label="Scan" malagasy="Mizaha" active={activeTab === 'scan'} onClick={() => setActiveTab('scan')} />
+            <TabButton icon={<ArrowLeftRight />} label="Lasa" malagasy="Lasa" active={activeTab === 'lasa'} onClick={() => setActiveTab('lasa')} />
             <TabButton icon={<Trophy />} label="Classement" malagasy="Filaharana" active={activeTab === 'standings'} onClick={() => setActiveTab('standings')} />
             <TabButton icon={<Activity />} label="Formes" malagasy="Valiny" active={activeTab === 'results'} onClick={() => setActiveTab('results')} />
             <TabButton icon={<History />} label="Archives" malagasy="Arisiva" active={activeTab === 'local_db'} onClick={() => setActiveTab('local_db')} />
@@ -2289,17 +2329,9 @@ function MainApp() {
                   bet261Account={bet261Account}
                 />
             )}
-            {activeTab === 'scan' && (
-            <ScanView 
-              upcomingMatches={matches.filter(m => m.status !== 'Finished' && m.status !== 'Terminé')} 
-              leagueId={selectedLeague}
-              onPlaceBet={executeAutoBet}
-              bet261Account={bet261Account}
-              rankings={rankings}
-              allMatches={matches}
-              results={results}
-            />
-          )}
+            {activeTab === 'lasa' && (
+              <LasaView upcomingMatches={matches} />
+            )}
           {activeTab === 'standings' && <StandingsView rankings={rankings} results={results} />}
           {activeTab === 'results' && <ResultsView results={results} rankings={rankings} leagueId={selectedLeague} />}
           {activeTab === 'upcoming' && (
@@ -2742,8 +2774,22 @@ function HistoricalMatchesSection({ match, leagueId }: { match: any, leagueId: n
 
   if (historicalMatches.length === 0) return null;
 
-  const sameTeams = historicalMatches.filter(m => m.homeTeam === match.homeTeam && m.awayTeam === match.awayTeam);
-  const sameOddsButDiffTeams = historicalMatches.filter(m => 
+  const validHistoricalMatches = historicalMatches.filter(m => {
+    // Must be played (not unplayed). Played matches have homeScore and awayScore defined, non-empty and non-dash
+    const hasHomeScore = m.homeScore !== undefined && m.homeScore !== null && String(m.homeScore).trim() !== '' && String(m.homeScore).trim() !== '-';
+    const hasAwayScore = m.awayScore !== undefined && m.awayScore !== null && String(m.awayScore).trim() !== '' && String(m.awayScore).trim() !== '-';
+    const isPlayed = m.status === 'Finished' || (hasHomeScore && hasAwayScore);
+
+    // Must have odds (has non-empty numeric or string odds for all 1, X, 2)
+    const hasOdds = m.odds1 !== undefined && m.odds1 !== null && String(m.odds1).trim() !== '' && String(m.odds1).trim() !== '-' &&
+                    m.oddsX !== undefined && m.oddsX !== null && String(m.oddsX).trim() !== '' && String(m.oddsX).trim() !== '-' &&
+                    m.odds2 !== undefined && m.odds2 !== null && String(m.odds2).trim() !== '' && String(m.odds2).trim() !== '-';
+
+    return isPlayed && hasOdds;
+  });
+
+  const sameTeams = validHistoricalMatches.filter(m => m.homeTeam === match.homeTeam && m.awayTeam === match.awayTeam);
+  const sameOddsButDiffTeams = validHistoricalMatches.filter(m => 
     (m.homeTeam !== match.homeTeam || m.awayTeam !== match.awayTeam) && 
     (m.odds1 === match.odds1 && m.oddsX === match.oddsX && m.odds2 === match.odds2)
   );
@@ -2793,6 +2839,40 @@ function HistoricalMatchCard({ m, currentMatch }: { m: any, currentMatch: any })
   const isSameOdds = m.odds1 === currentMatch.odds1 && m.oddsX === currentMatch.oddsX && m.odds2 === currentMatch.odds2;
   const isFinished = m.status === 'Finished' || m.homeScore !== undefined;
 
+  const details = m.scoreDetails || m.eventScore?.scoreDetails || {};
+  const homeGoalsList = details.homeGoals || [];
+  const awayGoalsList = details.awayGoals || [];
+  const allGoals = [
+    ...(homeGoalsList.map((g: any) => ({ ...g, side: 'h' })) || []),
+    ...(awayGoalsList.map((g: any) => ({ ...g, side: 'a' })) || [])
+  ].sort((a, b) => parseInt(a.minute || a.time || '0') - parseInt(b.minute || b.time || '0'));
+
+  const hasGoals = allGoals.length > 0;
+
+  // Compute HT/FT
+  const hHomeScore = parseInt(m.homeScore || '0');
+  const hAwayScore = parseInt(m.awayScore || '0');
+  let htFtBadge = null;
+  if (hasGoals) {
+    let hHt = 0;
+    let aHt = 0;
+    homeGoalsList.forEach((g: any) => {
+      const min = parseInt(g.minute || g.time || '0');
+      if (!isNaN(min) && min <= 45) hHt++;
+    });
+    awayGoalsList.forEach((g: any) => {
+      const min = parseInt(g.minute || g.time || '0');
+      if (!isNaN(min) && min <= 45) aHt++;
+    });
+    const htRes = hHt > aHt ? '1' : (hHt < aHt ? '2' : 'X');
+    const ftRes = hHomeScore > hAwayScore ? '1' : (hHomeScore < hAwayScore ? '2' : 'X');
+    htFtBadge = (
+      <div className="px-1 py-0.5 rounded bg-indigo-500/10 border border-indigo-500/25 text-indigo-400 font-mono text-[7px] font-black uppercase tracking-wider shrink-0 mt-1">
+        HT/FT {htRes}/{ftRes}
+      </div>
+    );
+  }
+
   return (
     <div className="bg-slate-950/40 border border-slate-800 p-3 rounded-2xl flex items-center justify-between group hover:border-slate-700 transition-all">
       <div className="flex flex-col gap-1 min-w-0 flex-1">
@@ -2813,14 +2893,32 @@ function HistoricalMatchCard({ m, currentMatch }: { m: any, currentMatch: any })
             {m.awayTeam}
           </span>
         </div>
+
+        {/* Goal Minutes List */}
+        {hasGoals && (
+          <div className="flex flex-wrap gap-1 mt-1.5 max-w-[90%]">
+            {allGoals.map((g, gi) => (
+              <span key={gi} className={`text-[7px] font-black font-mono px-1 py-0.2 rounded border ${
+                g.side === 'h' 
+                  ? 'bg-indigo-500/5 border-indigo-500/10 text-indigo-400' 
+                  : 'bg-rose-500/5 border-rose-500/10 text-rose-400'
+              }`}>
+                {g.minute || g.time}'
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
-      <div className="flex items-center gap-4 ml-4">
+      <div className="flex items-center gap-4 ml-4 shrink-0">
         {isFinished ? (
-          <div className="flex items-center gap-1.5 px-3 py-1 bg-slate-900 rounded-lg border border-slate-800">
-            <span className="text-sm font-black text-white">{m.homeScore}</span>
-            <span className="text-slate-600 font-bold">-</span>
-            <span className="text-sm font-black text-white">{m.awayScore}</span>
+          <div className="flex flex-col items-center">
+            <div className="flex items-center gap-1.5 px-3 py-1 bg-slate-900 rounded-lg border border-slate-800">
+              <span className="text-sm font-black text-white">{m.homeScore}</span>
+              <span className="text-slate-600 font-bold">-</span>
+              <span className="text-sm font-black text-white">{m.awayScore}</span>
+            </div>
+            {htFtBadge}
           </div>
         ) : (
           <span className="text-[8px] font-black text-emerald-500 uppercase tracking-widest">En cours</span>
@@ -2842,16 +2940,16 @@ function TabButton({ label, malagasy, icon, active, onClick }: { label: string, 
   return (
     <button
       onClick={onClick}
-      className={`flex items-center gap-2 px-4 py-2 text-[10px] font-black uppercase tracking-widest transition-all rounded-lg ${
+      className={`flex items-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 text-[10px] font-black uppercase tracking-widest transition-all rounded-lg shrink-0 ${
         active ? 'nav-tab-active' : 'nav-tab-inactive'
       }`}
     >
       <span className={active ? 'text-emerald-400' : 'text-slate-500'}>
-        {React.cloneElement(icon as any, { className: 'w-3.5 h-3.5' })}
+        {React.cloneElement(icon as any, { className: 'w-3 h-3 sm:w-3.5 sm:h-3.5' })}
       </span>
       <div className="flex flex-col items-start leading-none">
-        <span className="text-[9px]">{malagasy}</span>
-        <span className="text-[6px] opacity-40 font-bold">{label}</span>
+        <span className="text-[8.5px] sm:text-[9px]">{malagasy}</span>
+        <span className="text-[5.5px] sm:text-[6px] opacity-40 font-bold">{label}</span>
       </div>
     </button>
   );
@@ -2937,13 +3035,14 @@ function ScrollableFormList({ history, size = 'md' }: { history: string[], size?
   );
 }
 
-function MatchCard({ match, rankings, results, onClick, onPlaceBet, bet261Account }: { 
+function MatchCard({ match, rankings, results, onClick, onPlaceBet, bet261Account, resultsCache }: { 
   match: any, 
   rankings: any[], 
   results: any[],
   onClick?: () => void,
   onPlaceBet?: (match: any, selection: string, odds: string, stake?: number) => Promise<void>,
-  bet261Account?: any
+  bet261Account?: any,
+  resultsCache?: { recentMatchesMap: Record<string, any[]>, formMap: Record<string, string[]> }
 }) {
   const [homeLogoError, setHomeLogoError] = useState(false);
   const [awayLogoError, setAwayLogoError] = useState(false);
@@ -2958,76 +3057,78 @@ function MatchCard({ match, rankings, results, onClick, onPlaceBet, bet261Accoun
   const homeName = String(getTeamName(match.homeTeam));
   const awayName = String(getTeamName(match.awayTeam));
 
-  const getFullForm = (teamName: string) => {
-    const formArr: string[] = [];
-    const normalizedTarget = teamName.toLowerCase().trim();
+  // Build local fallback cache inside MatchCard if resultsCache is not passed
+  const fallbackCache = React.useMemo(() => {
+    if (resultsCache) return null;
+    const recentMatchesMap: Record<string, any[]> = {};
+    const formMap: Record<string, string[]> = {};
+
     results.forEach(round => {
       const ms = round.matches || (Array.isArray(round) ? round : []);
       ms.forEach((m: any) => {
-        const hN = getTeamName(m.homeTeam).toLowerCase().trim();
-        const aN = getTeamName(m.awayTeam).toLowerCase().trim();
-        if (hN === normalizedTarget || aN === normalizedTarget) {
-          // Verify we have real scores
-          let homeRaw = m.homeScore;
-          let awayRaw = m.awayScore;
-          
-          if (m.score) {
-             const sep = m.score.includes(':') ? ':' : '-';
-             const parts = m.score.split(sep);
-             if (parts.length === 2) {
-               homeRaw = parts[0];
-               awayRaw = parts[1];
-             }
-          }
-          
-          if (homeRaw === undefined || homeRaw === null || homeRaw === '' || 
-              awayRaw === undefined || awayRaw === null || awayRaw === '') return;
+        const hN = getTeamName(m.homeTeam);
+        const aN = getTeamName(m.awayTeam);
+        const hN_lower = hN.toLowerCase().trim();
+        const aN_lower = aN.toLowerCase().trim();
 
+        let homeRaw = m.homeScore;
+        let awayRaw = m.awayScore;
+        if (m.score) {
+          const sep = m.score.includes(':') ? ':' : '-';
+          const parts = m.score.split(sep);
+          if (parts.length === 2) {
+            homeRaw = parts[0];
+            awayRaw = parts[1];
+          }
+        }
+
+        const hSText = homeRaw !== undefined && homeRaw !== null && String(homeRaw).trim() !== '' && String(homeRaw).trim() !== '-';
+        const aSText = awayRaw !== undefined && awayRaw !== null && String(awayRaw).trim() !== '' && String(awayRaw).trim() !== '-';
+
+        if (hSText && aSText) {
           const hS = parseInt(String(homeRaw));
           const aS = parseInt(String(awayRaw));
-          
-          if (isNaN(hS) || isNaN(aS)) return;
 
-          if (hN === normalizedTarget) {
-            formArr.push(hS > aS ? 'Won' : (hS < aS ? 'Lost' : 'Draw'));
-          } else {
-            formArr.push(aS > hS ? 'Won' : (aS < hS ? 'Lost' : 'Draw'));
+          if (!isNaN(hS) && !isNaN(aS)) {
+            const processedMatch = { ...m, homeScore: homeRaw, awayScore: awayRaw, roundNumber: round.roundNumber || round.round };
+            
+            if (!formMap[hN_lower]) formMap[hN_lower] = [];
+            formMap[hN_lower].push(hS > aS ? 'Won' : (hS < aS ? 'Lost' : 'Draw'));
+
+            if (!formMap[aN_lower]) formMap[aN_lower] = [];
+            formMap[aN_lower].push(aS > hS ? 'Won' : (aS < hS ? 'Lost' : 'Draw'));
+
+            if (!recentMatchesMap[hN_lower]) recentMatchesMap[hN_lower] = [];
+            recentMatchesMap[hN_lower].push(processedMatch);
+
+            if (!recentMatchesMap[aN_lower]) recentMatchesMap[aN_lower] = [];
+            recentMatchesMap[aN_lower].push(processedMatch);
           }
         }
       });
     });
-    return formArr;
+
+    Object.keys(recentMatchesMap).forEach(key => {
+      recentMatchesMap[key].sort((a, b) => (Number(b.roundNumber) || 0) - (Number(a.roundNumber) || 0));
+    });
+
+    return { recentMatchesMap, formMap };
+  }, [results, resultsCache]);
+
+  const activeCache = resultsCache || fallbackCache;
+
+  const getFullForm = (teamName: string) => {
+    if (activeCache) {
+      return activeCache.formMap[teamName.toLowerCase().trim()] || [];
+    }
+    return [];
   };
 
   const getRecentMatches = (teamName: string) => {
-    const ms: any[] = [];
-    const normalizedTarget = teamName.toLowerCase().trim();
-    results.forEach(round => {
-      const rms = round.matches || (Array.isArray(round) ? round : []);
-      rms.forEach((m: any) => {
-        const hN = getTeamName(m.homeTeam).toLowerCase().trim();
-        const aN = getTeamName(m.awayTeam).toLowerCase().trim();
-        if (hN === normalizedTarget || aN === normalizedTarget) {
-           let homeRaw = m.homeScore;
-           let awayRaw = m.awayScore;
-           if (m.score) {
-             const sep = m.score.includes(':') ? ':' : '-';
-             const parts = m.score.split(sep);
-             if (parts.length === 2) {
-               homeRaw = parts[0];
-               awayRaw = parts[1];
-             }
-           }
-
-           // Only include matches that have actually happened/have scores
-           if (homeRaw !== undefined && homeRaw !== null && homeRaw !== '' &&
-               awayRaw !== undefined && awayRaw !== null && awayRaw !== '') {
-             ms.push({ ...m, homeScore: homeRaw, awayScore: awayRaw, roundNumber: round.roundNumber || round.round });
-           }
-        }
-      });
-    });
-    return ms.sort((a, b) => (Number(b.roundNumber) || 0) - (Number(a.roundNumber) || 0));
+    if (activeCache) {
+      return activeCache.recentMatchesMap[teamName.toLowerCase().trim()] || [];
+    }
+    return [];
   };
 
   const renderDetailedForm = (teamName: string) => {
@@ -3048,24 +3149,78 @@ function MatchCard({ match, rankings, results, onClick, onPlaceBet, bet261Accoun
           const rAScore = parseInt(String(r.awayScore));
           const outcome = rHScore === rAScore ? 'D' : ((isHome && rHScore > rAScore) || (!isHome && rAScore > rHScore) ? 'W' : 'L');
 
+          const details = r.scoreDetails || r.eventScore?.scoreDetails || {};
+          const homeGoalsList = details.homeGoals || [];
+          const awayGoalsList = details.awayGoals || [];
+          const allGoals = [
+            ...(homeGoalsList.map((g: any) => ({ ...g, side: 'h' })) || []),
+            ...(awayGoalsList.map((g: any) => ({ ...g, side: 'a' })) || [])
+          ].sort((a, b) => parseInt(a.minute || a.time || '0') - parseInt(b.minute || b.time || '0'));
+
+          const hasGoals = allGoals.length > 0;
+
+          // Compute HT/FT
+          let htFtBadge = null;
+          if (hasGoals) {
+            let hHt = 0;
+            let aHt = 0;
+            homeGoalsList.forEach((g: any) => {
+              const min = parseInt(g.minute || g.time || '0');
+              if (!isNaN(min) && min <= 45) hHt++;
+            });
+            awayGoalsList.forEach((g: any) => {
+              const min = parseInt(g.minute || g.time || '0');
+              if (!isNaN(min) && min <= 45) aHt++;
+            });
+            const htRes = hHt > aHt ? '1' : (hHt < aHt ? '2' : 'X');
+            const ftRes = rHScore > rAScore ? '1' : (rHScore < rAScore ? '2' : 'X');
+            htFtBadge = (
+              <span className="px-1 py-0.5 rounded bg-indigo-500/10 border border-indigo-500/25 text-indigo-400 font-mono text-[6.5px] font-black uppercase tracking-wider shrink-0 select-none">
+                HT/FT {htRes}/{ftRes}
+              </span>
+            );
+          }
+
           return (
-            <div key={i} className="flex items-center justify-between gap-2 p-1 rounded bg-white/[0.02] border border-white/[0.05]">
-              <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                <span className={`w-3.5 h-3.5 rounded-sm flex items-center justify-center text-[7px] font-black text-white shrink-0 ${
-                  outcome === 'W' ? 'bg-emerald-500' : outcome === 'L' ? 'bg-rose-500' : 'bg-slate-600'
-                }`}>
-                  {outcome === 'W' ? 'V' : outcome === 'L' ? 'D' : 'N'}
-                </span>
-                <div className="flex items-center gap-1 truncate w-full">
-                  <span className="text-slate-600 text-[6px] font-black">J{r.roundNumber}</span>
-                  <span className={`truncate text-[8px] font-black uppercase ${isHome ? 'text-indigo-400' : 'text-slate-400'}`}>{isHome ? rAName : rHName}</span>
+            <div key={i} className="flex flex-col gap-1 p-1.5 rounded bg-white/[0.02] border border-white/[0.05]">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                  <span className={`w-3.5 h-3.5 rounded-sm flex items-center justify-center text-[7px] font-black text-white shrink-0 ${
+                    outcome === 'W' ? 'bg-emerald-500' : outcome === 'L' ? 'bg-rose-500' : 'bg-slate-600'
+                  }`}>
+                    {outcome === 'W' ? 'V' : outcome === 'L' ? 'D' : 'N'}
+                  </span>
+                  <div className="flex items-center gap-1 truncate w-full">
+                    <span className="text-slate-600 text-[6px] font-black">J{r.roundNumber}</span>
+                    <span className={`truncate text-[8px] font-black uppercase ${isHome ? 'text-indigo-400' : 'text-slate-400'}`}>{rHName}</span>
+                    <span className="text-slate-700 text-[7px] font-bold px-0.5">vs</span>
+                    <span className={`truncate text-[8px] font-black uppercase ${!isHome ? 'text-indigo-400' : 'text-slate-400'}`}>{rAName}</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {htFtBadge}
+                  <div className="flex items-center gap-1 bg-black/20 px-1.5 py-0.5 rounded shrink-0 ring-1 ring-white/5">
+                    <span className={`text-[9px] font-black ${rHScore > rAScore ? 'text-emerald-400' : 'text-slate-400'}`}>{rHScore}</span>
+                    <span className="text-[7px] text-slate-600 font-black">-</span>
+                    <span className={`text-[9px] font-black ${rAScore > rHScore ? 'text-emerald-400' : 'text-slate-400'}`}>{rAScore}</span>
+                  </div>
                 </div>
               </div>
-              <div className="flex items-center gap-1 bg-black/20 px-1.5 py-0.5 rounded shrink-0 ring-1 ring-white/5">
-                <span className={`text-[9px] font-black ${rHScore > rAScore ? 'text-emerald-400' : 'text-slate-400'}`}>{rHScore}</span>
-                <span className="text-[7px] text-slate-600 font-black">-</span>
-                <span className={`text-[9px] font-black ${rAScore > rHScore ? 'text-emerald-400' : 'text-slate-400'}`}>{rAScore}</span>
-              </div>
+
+              {/* Goal Minutes List */}
+              {hasGoals && (
+                <div className="flex flex-wrap gap-1 pl-5 max-w-[90%]">
+                  {allGoals.map((g, gi) => (
+                    <span key={gi} className={`text-[6.5px] font-black font-mono px-1 py-0.2 rounded border ${
+                      g.side === 'h' 
+                        ? 'bg-indigo-500/5 border-indigo-500/10 text-indigo-400' 
+                        : 'bg-rose-500/5 border-rose-500/10 text-rose-400'
+                    }`}>
+                      {g.minute || g.time}'
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           );
         })}
@@ -3729,6 +3884,69 @@ function MatchesView({ matches, rankings, results, onMatchClick, onPlaceBet, bet
 }) {
   if (!matches || matches.length === 0) return <div className="text-slate-400 text-center py-12 bg-slate-900 rounded-xl border border-slate-800">Aucun match disponible.</div>;
 
+  const getTeamNameLocal = (team: any) => {
+    if (!team) return '-';
+    if (typeof team === 'string') return team;
+    return team.name || team.teamName || team.shortName || 'Équipe';
+  };
+
+  // Pre-calculate full form and recent matches for all teams once of the results
+  const resultsCache = React.useMemo(() => {
+    const recentMatchesMap: Record<string, any[]> = {};
+    const formMap: Record<string, string[]> = {};
+
+    results.forEach(round => {
+      const ms = round.matches || (Array.isArray(round) ? round : []);
+      ms.forEach((m: any) => {
+        const hN = getTeamNameLocal(m.homeTeam);
+        const aN = getTeamNameLocal(m.awayTeam);
+        const hN_lower = hN.toLowerCase().trim();
+        const aN_lower = aN.toLowerCase().trim();
+
+        let homeRaw = m.homeScore;
+        let awayRaw = m.awayScore;
+        if (m.score) {
+          const sep = m.score.includes(':') ? ':' : '-';
+          const parts = m.score.split(sep);
+          if (parts.length === 2) {
+            homeRaw = parts[0];
+            awayRaw = parts[1];
+          }
+        }
+
+        const hSText = homeRaw !== undefined && homeRaw !== null && String(homeRaw).trim() !== '' && String(homeRaw).trim() !== '-';
+        const aSText = awayRaw !== undefined && awayRaw !== null && String(awayRaw).trim() !== '' && String(awayRaw).trim() !== '-';
+
+        if (hSText && aSText) {
+          const hS = parseInt(String(homeRaw));
+          const aS = parseInt(String(awayRaw));
+
+          if (!isNaN(hS) && !isNaN(aS)) {
+            const processedMatch = { ...m, homeScore: homeRaw, awayScore: awayRaw, roundNumber: round.roundNumber || round.round };
+            
+            if (!formMap[hN_lower]) formMap[hN_lower] = [];
+            formMap[hN_lower].push(hS > aS ? 'Won' : (hS < aS ? 'Lost' : 'Draw'));
+
+            if (!formMap[aN_lower]) formMap[aN_lower] = [];
+            formMap[aN_lower].push(aS > hS ? 'Won' : (aS < hS ? 'Lost' : 'Draw'));
+
+            if (!recentMatchesMap[hN_lower]) recentMatchesMap[hN_lower] = [];
+            recentMatchesMap[hN_lower].push(processedMatch);
+
+            if (!recentMatchesMap[aN_lower]) recentMatchesMap[aN_lower] = [];
+            recentMatchesMap[aN_lower].push(processedMatch);
+          }
+        }
+      });
+    });
+
+    Object.keys(recentMatchesMap).forEach(key => {
+      recentMatchesMap[key].sort((a, b) => (Number(b.roundNumber) || 0) - (Number(a.roundNumber) || 0));
+    });
+
+    return { recentMatchesMap, formMap };
+  }, [results]);
+
   const teamRanks: Record<string, number> = {};
   rankings.forEach((team, index) => {
     const name = team.name || team.teamName;
@@ -3748,6 +3966,7 @@ function MatchesView({ matches, rankings, results, onMatchClick, onPlaceBet, bet
           onClick={() => onMatchClick(match)} 
           onPlaceBet={onPlaceBet}
           bet261Account={bet261Account}
+          resultsCache={resultsCache}
         />
       ))}
     </div>
@@ -3763,39 +3982,46 @@ function StandingsView({ rankings, results }: { rankings: any[], results: any[] 
     return team.name || team.teamName || team.shortName || 'Équipe';
   };
 
-  const getFullForm = (teamName: string) => {
-    const formArr: string[] = [];
-    const normalizedTarget = teamName.toLowerCase().trim();
+  const formMap = React.useMemo(() => {
+    const map: Record<string, string[]> = {};
     results.forEach(round => {
       const ms = round.matches || (Array.isArray(round) ? round : []);
       ms.forEach((m: any) => {
         const hN = getTeamName(m.homeTeam).toLowerCase().trim();
         const aN = getTeamName(m.awayTeam).toLowerCase().trim();
-        if (hN === normalizedTarget || aN === normalizedTarget) {
-          let homeRaw = m.homeScore;
-          let awayRaw = m.awayScore;
-          if (m.score) {
-             const sep = m.score.includes(':') ? ':' : '-';
-             const parts = m.score.split(sep);
-             if (parts.length === 2) {
-               homeRaw = parts[0];
-               awayRaw = parts[1];
-             }
+
+        let homeRaw = m.homeScore;
+        let awayRaw = m.awayScore;
+        if (m.score) {
+          const sep = m.score.includes(':') ? ':' : '-';
+          const parts = m.score.split(sep);
+          if (parts.length === 2) {
+            homeRaw = parts[0];
+            awayRaw = parts[1];
           }
-          if (homeRaw === undefined || homeRaw === null || homeRaw === '' || 
-              awayRaw === undefined || awayRaw === null || awayRaw === '') return;
+        }
+
+        const hSText = homeRaw !== undefined && homeRaw !== null && String(homeRaw).trim() !== '' && String(homeRaw).trim() !== '-';
+        const aSText = awayRaw !== undefined && awayRaw !== null && String(awayRaw).trim() !== '' && String(awayRaw).trim() !== '-';
+
+        if (hSText && aSText) {
           const hS = parseInt(String(homeRaw));
           const aS = parseInt(String(awayRaw));
-          if (isNaN(hS) || isNaN(aS)) return;
-          if (hN === normalizedTarget) {
-            formArr.push(hS > aS ? 'Won' : (hS < aS ? 'Lost' : 'Draw'));
-          } else {
-            formArr.push(aS > hS ? 'Won' : (aS < hS ? 'Lost' : 'Draw'));
+          if (!isNaN(hS) && !isNaN(aS)) {
+            if (!map[hN]) map[hN] = [];
+            map[hN].push(hS > aS ? 'Won' : (hS < aS ? 'Lost' : 'Draw'));
+
+            if (!map[aN]) map[aN] = [];
+            map[aN].push(aS > hS ? 'Won' : (aS < hS ? 'Lost' : 'Draw'));
           }
         }
       });
     });
-    return formArr;
+    return map;
+  }, [results]);
+
+  const getFullForm = (teamName: string) => {
+    return formMap[teamName.toLowerCase().trim()] || [];
   };
 
   return (
@@ -4957,8 +5183,7 @@ function ResultsView({
             <Database className="w-5 h-5 text-indigo-400" />
           </div>
           <div>
-            <h3 className="text-xs font-black text-slate-200 uppercase tracking-wider">🗄️ Navigateur de Sauvegardes de Matrice</h3>
-            <p className="text-[8.5px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Consulter, restaurer ou purger les matrices d'évolution & de forme archivées en base</p>
+            <h3 className="text-xs font-black text-slate-200 uppercase tracking-wider">🗄️ Matrices Archivées</h3>
           </div>
         </div>
         <button
@@ -5905,8 +6130,7 @@ function ResultsView({
                       <div className="flex items-center gap-3">
                         <TrendingUp className="w-5 h-5 text-emerald-400 shrink-0" />
                         <div className="flex flex-col">
-                          <h2 className="text-[13px] font-black text-slate-100 uppercase tracking-wider">Matrice de Forme Superposée</h2>
-                          <p className="text-[8.5px] text-slate-400 font-bold uppercase tracking-widest mt-1">Alignée par Round (Récents &agrave; Gauche) • Séquences répétées par code couleur (🟢, 🔴, 🟡)</p>
+                          <h2 className="text-[11px] font-black text-slate-100 uppercase tracking-wider">Matrice de Forme</h2>
                         </div>
                       </div>
                       <div className="flex items-center gap-3 flex-wrap md:flex-nowrap">
@@ -6304,8 +6528,7 @@ function ResultsView({
               <div className="flex items-center gap-3">
                 <Activity className="w-5 h-5 text-indigo-400 shrink-0" />
                 <div className="flex flex-col">
-                  <h2 className="text-[13px] font-black text-slate-100 uppercase tracking-wider">Matrice d'Évolution des Rangs</h2>
-                  <p className="text-[8.5px] text-slate-400 font-bold uppercase tracking-widest mt-1">Évolution des positions de la Journée 1 à {activeResults.length}</p>
+                  <h2 className="text-[11px] font-black text-slate-100 uppercase tracking-wider">Évolution des Rangs</h2>
                 </div>
               </div>
               <div className="text-right">
@@ -6564,8 +6787,7 @@ function ResultsView({
                 <ArrowLeftRight className="w-5 h-5 text-indigo-400" />
               </div>
               <div>
-                <h2 className="text-xs font-black text-slate-100 uppercase tracking-widest">Matrice des Confrontations Aller / Retour</h2>
-                <p className="text-[8px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">Visualisation croisée des matches à domicile (Aller) et à l'extérieur (Retour)</p>
+                <h2 className="text-xs font-black text-slate-100 uppercase tracking-widest">Matrice Aller / Retour</h2>
               </div>
             </div>
 
@@ -7074,11 +7296,8 @@ function ResultsView({
                 </div>
                 <div>
                   <h2 className="text-sm font-black text-slate-100 uppercase tracking-widest">
-                    Exploitation des Matrices Archivées & Répétitions
+                    Répétitions des Formes
                   </h2>
-                  <p className="text-[10px] text-indigo-400 font-extrabold uppercase tracking-wider mt-0.5">
-                    Analyse Multi-Ligues Sans Limites : Modélisation des Séquences de Forme sur toutes les Saisons & Championnats Archivés
-                  </p>
                 </div>
               </div>
 

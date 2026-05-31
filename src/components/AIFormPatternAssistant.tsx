@@ -208,10 +208,7 @@ export default function AIFormPatternAssistant({
             <Brain className="w-5 h-5 text-indigo-400 animate-pulse" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <span className="text-[7px] font-black tracking-widest text-indigo-400 uppercase bg-indigo-500/10 px-1.5 py-0.5 rounded border border-indigo-500/20">MODULE EXPERT IA</span>
-            </div>
-            <h2 className="text-xs font-black text-slate-100 uppercase tracking-widest mt-1">Analyseur de Patterns Chartistes</h2>
+            <h2 className="text-xs font-black text-slate-100 uppercase tracking-widest">Analyseur de Patterns</h2>
           </div>
         </div>
 
@@ -245,7 +242,7 @@ export default function AIFormPatternAssistant({
       {activeTab === 'top' ? (
         <div className="space-y-3">
           <p className="text-[10px] text-slate-400 leading-normal font-medium">
-            L'assistante IA a scanné l'ensemble des historiques de formes. Voici les 3 clubs possédant le comportement séquentiel le plus régulier (indice de lisibilité le plus élevé), facilitant une prévision rigoureuse.
+            Clubs à forte régularité séquentielle (indice de lisibilité élevé).
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
