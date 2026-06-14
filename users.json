@@ -1,0 +1,223 @@
+[
+  {
+    "status": "approved",
+    "totalUsageSeconds": 749642,
+    "lastActiveAt": "2026-06-13T07:06:37.518Z",
+    "createdAt": "2026-06-01T09:49:36.172Z",
+    "role": "admin",
+    "updatedAt": "2026-06-13T07:06:37.518Z",
+    "fullName": "Administrateur",
+    "passwordHash": "e0bc60c82713f64ef8a57c0c40d02ce24fd0141d5cc3086259c19b1e62a62bea",
+    "username": "admin"
+  },
+  {
+    "lastActiveAt": "2026-06-04T14:00:46.077Z",
+    "totalUsageSeconds": 13610,
+    "status": "rejected",
+    "role": "user",
+    "createdAt": "2026-06-03T18:16:52.185Z",
+    "passwordHash": "03e32e30fa03ac4d27ae4e2ef56e74a06674f7b97d8ead1fe80e110fc9f17ae7",
+    "fullName": "Armel Kali",
+    "updatedAt": "2026-06-10T07:06:34.590Z",
+    "username": "armel"
+  },
+  {
+    "passwordHash": "00f264f1b623260e47c6b411af992a7bb8a007d41f215af9510db717cd043d0a",
+    "status": "rejected",
+    "updatedAt": "2026-06-10T07:06:32.680Z",
+    "fullName": "beta",
+    "role": "user",
+    "createdAt": "2026-06-03T17:34:41.777Z",
+    "username": "betata"
+  },
+  {
+    "username": "caps",
+    "updatedAt": "2026-06-10T07:06:30.831Z",
+    "fullName": "Raveloson fifaliana Sarobidy",
+    "passwordHash": "46ff9b8ab7c6f88c0376cacc6e558810a76a23b898669e1a5f9951df3f0232ba",
+    "createdAt": "2026-06-03T17:55:09.718Z",
+    "role": "user",
+    "status": "rejected",
+    "totalUsageSeconds": 182,
+    "lastActiveAt": "2026-06-03T18:03:00.666Z"
+  },
+  {
+    "status": "rejected",
+    "updatedAt": "2026-06-10T07:06:28.700Z",
+    "fullName": "RAZAFINDRABE Alphonse Ellyo",
+    "passwordHash": "4497d6e0ed9bf9dc983cd2af41473e72c57480511366c21126577119fdba7d1b",
+    "createdAt": "2026-06-07T07:27:12.831Z",
+    "username": "ellyo",
+    "role": "user"
+  },
+  {
+    "username": "jdupont",
+    "createdAt": "2026-06-06T19:19:24.573Z",
+    "role": "user",
+    "passwordHash": "f6b469648070c3e9939aa79fe0ad17bfd957873b9ded847de0425d79cceed246",
+    "fullName": "Jean Dupont",
+    "updatedAt": "2026-06-10T07:06:26.291Z",
+    "status": "rejected"
+  },
+  {
+    "username": "john",
+    "updatedAt": "2026-06-11T07:56:19.527Z",
+    "fullName": "Angelin John",
+    "passwordHash": "fadf8c1fa082f0e8f84d32a7957b0fc36d04c898f2f7dac814a6abe5f3620456",
+    "role": "user",
+    "createdAt": "2026-06-04T13:06:38.679Z",
+    "status": "approved",
+    "lastActiveAt": "2026-06-11T07:56:19.527Z",
+    "totalUsageSeconds": 55271
+  },
+  {
+    "username": "jous",
+    "updatedAt": "2026-06-10T07:06:21.769Z",
+    "fullName": "Raharison",
+    "passwordHash": "1718c24b10aeb8099e3fc44960ab6949ab76a267352459f203ea1036bec382c2",
+    "createdAt": "2026-06-03T18:36:42.251Z",
+    "role": "user",
+    "status": "rejected",
+    "totalUsageSeconds": 10667,
+    "lastActiveAt": "2026-06-04T18:28:35.511Z"
+  },
+  {
+    "createdAt": "2026-06-01T10:55:01.620Z",
+    "role": "user",
+    "totalUsageSeconds": 80308,
+    "lastActiveAt": "2026-06-07T21:18:12.907Z",
+    "status": "rejected",
+    "username": "kasa",
+    "passwordHash": "8e3a152a96b5deec3b5040e2620b27e8fa40911e074ea40ea175b355e8eae14e",
+    "fullName": "Mahakasa",
+    "updatedAt": "2026-06-10T07:06:19.720Z"
+  },
+  {
+    "fullName": "Raveloson fifaliana Sarobidy",
+    "updatedAt": "2026-06-10T07:06:17.770Z",
+    "passwordHash": "46ff9b8ab7c6f88c0376cacc6e558810a76a23b898669e1a5f9951df3f0232ba",
+    "username": "kiady",
+    "status": "rejected",
+    "lastActiveAt": "2026-06-05T12:20:19.132Z",
+    "totalUsageSeconds": 12988,
+    "role": "user",
+    "createdAt": "2026-06-03T17:52:03.756Z"
+  },
+  {
+    "status": "rejected",
+    "totalUsageSeconds": 25586,
+    "lastActiveAt": "2026-06-05T09:08:17.617Z",
+    "createdAt": "2026-06-02T08:29:26.852Z",
+    "role": "user",
+    "updatedAt": "2026-06-10T07:06:15.470Z",
+    "fullName": "Rija Niaina",
+    "passwordHash": "07334386287751ba02a4588c1a0875dbd074a61bd9e6ab7c48d244eacd0c99e0",
+    "username": "leon"
+  },
+  {
+    "totalUsageSeconds": 571,
+    "lastActiveAt": "2026-06-01T18:54:23.595Z",
+    "status": "rejected",
+    "createdAt": "2026-06-01T18:39:50.644Z",
+    "role": "user",
+    "passwordHash": "ef797c8118f02dfb649607dd5d3f8c7623048c9c063d532cc95c5ed7a898a64f",
+    "fullName": "Layone",
+    "updatedAt": "2026-06-10T07:06:13.250Z",
+    "username": "loda123"
+  },
+  {
+    "fullName": "RAKOTOSON FAMENONA Marisia",
+    "updatedAt": "2026-06-10T07:06:10.620Z",
+    "passwordHash": "3c62a4ed5663219e08d3303bcd1619d1d5df353460d2e550ca798bd39db5ca70",
+    "username": "marisia",
+    "status": "rejected",
+    "totalUsageSeconds": 291,
+    "lastActiveAt": "2026-06-05T13:56:38.694Z",
+    "createdAt": "2026-06-05T13:50:47.601Z",
+    "role": "user"
+  },
+  {
+    "role": "user",
+    "username": "mika",
+    "createdAt": "2026-06-03T18:33:10.471Z",
+    "passwordHash": "1718c24b10aeb8099e3fc44960ab6949ab76a267352459f203ea1036bec382c2",
+    "fullName": "Raharison",
+    "status": "rejected",
+    "updatedAt": "2026-06-10T07:06:08.292Z"
+  },
+  {
+    "role": "user",
+    "createdAt": "2026-06-04T13:06:16.315Z",
+    "lastActiveAt": "2026-06-10T15:51:15.054Z",
+    "totalUsageSeconds": 16392,
+    "status": "approved",
+    "username": "mond",
+    "passwordHash": "0b9713c6112f627f3d1ac9d943b6e318649bf4db0f8c30bbd29b86e2206b631c",
+    "updatedAt": "2026-06-10T15:51:15.054Z",
+    "fullName": "Mond philemond"
+  },
+  {
+    "lastActiveAt": "2026-06-04T01:37:05.785Z",
+    "totalUsageSeconds": 2253,
+    "status": "rejected",
+    "role": "user",
+    "createdAt": "2026-06-03T20:10:59.175Z",
+    "passwordHash": "3f8c60e0bc79f248aea9470ad8d988a657cd2f19c7c598a764a8fcc4c57f0ddb",
+    "updatedAt": "2026-06-10T07:06:03.912Z",
+    "fullName": "Santa",
+    "username": "olga"
+  },
+  {
+    "username": "rado",
+    "updatedAt": "2026-06-12T15:00:14.445Z",
+    "fullName": "Rado",
+    "passwordHash": "d619fa2293a5987db17dc3756c758f5da22a144b760714491a55458f2e5fe5be",
+    "role": "user",
+    "createdAt": "2026-06-06T17:53:02.552Z",
+    "status": "approved",
+    "lastActiveAt": "2026-06-12T15:00:14.445Z",
+    "totalUsageSeconds": 9029
+  },
+  {
+    "passwordHash": "f6b469648070c3e9939aa79fe0ad17bfd957873b9ded847de0425d79cceed246",
+    "updatedAt": "2026-06-10T07:05:50.112Z",
+    "fullName": "Savalas tf",
+    "username": "savalas",
+    "totalUsageSeconds": 124,
+    "lastActiveAt": "2026-06-03T20:26:12.088Z",
+    "status": "rejected",
+    "createdAt": "2026-06-01T19:15:33.035Z",
+    "role": "user"
+  },
+  {
+    "createdAt": "2026-06-01T17:43:47.650Z",
+    "role": "user",
+    "totalUsageSeconds": 7693,
+    "lastActiveAt": "2026-06-05T13:56:13.289Z",
+    "status": "rejected",
+    "username": "tendry",
+    "passwordHash": "6ac4a8cf06a48f2f08e632d931912a83508bbebd6a1778e0c2d71c9822d25a58",
+    "fullName": "Tendry aplh",
+    "updatedAt": "2026-06-06T12:09:45.645Z"
+  },
+  {
+    "passwordHash": "d55d7d8feea47c667408c85535101e4a46a0a0345ef26da1a37cabd010bf3c18",
+    "status": "rejected",
+    "updatedAt": "2026-06-06T12:09:39.061Z",
+    "fullName": "Jhonne Rambo",
+    "role": "user",
+    "createdAt": "2026-06-05T13:57:37.721Z",
+    "username": "veritas"
+  },
+  {
+    "totalUsageSeconds": 5004,
+    "lastActiveAt": "2026-06-12T12:26:50.357Z",
+    "status": "approved",
+    "createdAt": "2026-06-12T07:10:16.019Z",
+    "role": "user",
+    "passwordHash": "e4ac3c6df79b1da53ef71bb9ffd9127d125ef79f6fe10c8a705c20b8fd83f9e6",
+    "updatedAt": "2026-06-12T12:26:50.357Z",
+    "fullName": "Sitraka",
+    "username": "sitraka"
+  }
+]

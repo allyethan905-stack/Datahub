@@ -1,0 +1,60 @@
+{
+  "entities": {
+    "users": {
+      "title": "AuthUser",
+      "description": "User registration and authorization details.",
+      "type": "object",
+      "properties": {
+        "username": { "type": "string" },
+        "fullName": { "type": "string" },
+        "passwordHash": { "type": "string" },
+        "role": { "type": "string" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["username", "fullName", "passwordHash", "role", "status", "createdAt"]
+    },
+    "messages": {
+      "title": "UserMessage",
+      "description": "Direct and broadcast messages between administrator and users.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "from": { "type": "string" },
+        "to": { "type": "string" },
+        "content": { "type": "string" },
+        "readBy": { "type": "array", "items": { "type": "string" } },
+        "read": { "type": "boolean" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "from", "to", "content", "readBy", "read", "createdAt"]
+    },
+    "sessions": {
+      "title": "UserSession",
+      "description": "Active user sessions synchronized across server instances.",
+      "type": "object",
+      "properties": {
+        "token": { "type": "string" },
+        "username": { "type": "string" },
+        "role": { "type": "string" },
+        "fullName": { "type": "string" },
+        "lastActive": { "type": "integer" }
+      },
+      "required": ["token", "username", "role", "fullName", "lastActive"]
+    }
+  },
+  "firestore": {
+    "users/{username}": {
+      "schema": "users",
+      "description": "User account documents stored by their unique username."
+    },
+    "messages/{id}": {
+      "schema": "messages",
+      "description": "Admin messages stored by their unique ID."
+    },
+    "sessions/{token}": {
+      "schema": "sessions",
+      "description": "Active sessions logged by their unique token ID."
+    }
+  }
+}

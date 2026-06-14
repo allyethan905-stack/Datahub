@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Play, Square, Activity, Server, Database, List, Clock, CheckCircle2, Loader2, Download, CloudUpload, AlertCircle, Trash2 } from 'lucide-react';
+import { Play, Square, Activity, Database, List, Clock, CheckCircle2, Download, AlertCircle } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { LEAGUES, generateMatchId } from '../shared/constants';
@@ -30,6 +30,8 @@ export interface ExtractedMatch {
   updatedAt: Date;
   round?: number;
   expectedStart?: string | number;
+  homeFormWDLPct?: { v: number; n: number; d: number; played: number };
+  awayFormWDLPct?: { v: number; n: number; d: number; played: number };
 }
 
 interface LogEntry {
@@ -63,8 +65,8 @@ export default function DataExtractionMenu({ leagueId = 1, rankings = [], onActi
   const [currentSeason, setCurrentSeason] = useState<string | null>(null);
   const [isWaitingForNextSeason, setIsWaitingForNextSeason] = useState(false);
   const [countdown, setCountdown] = useState(0);
-  const [isSyncing, setIsSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
+  const [localRankings, setLocalRankings] = useState<any[]>([]);
 
   // --- REFS (pour accès dans les setInterval sans dépendances) ---
   const pendingRef = useRef(pendingMatches);
@@ -79,12 +81,71 @@ export default function DataExtractionMenu({ leagueId = 1, rankings = [], onActi
   useEffect(() => { finishedRef.current = finishedMatches; }, [finishedMatches]);
   useEffect(() => { activeRef.current = isActive; }, [isActive]);
   useEffect(() => { isWaitingRef.current = isWaitingForNextSeason; }, [isWaitingForNextSeason]);
+
+  const isSameTeamLocal = (t1: string = '', t2: string = '') => {
+    const n1 = t1.toLowerCase().trim();
+    const n2 = t2.toLowerCase().trim();
+    if (n1 === n2) return true;
+    
+    const clean = (s: string) => {
+      return s
+        .replace(/\bfc\b|\brc\b|\bsc\b|\bafc\b|\bas\b|\bud\b|\bcd\b|\bac\b|\bcf\b/g, '')
+        .replace(/[^a-z0-9]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    };
+    
+    const c1 = clean(n1);
+    const c2 = clean(n2);
+    if (c1 === c2 && c1 !== '') return true;
+    if (c1.length > 3 && c2.length > 3) {
+      if (c1.includes(c2) || c2.includes(c1)) return true;
+    }
+    return false;
+  };
+
+  const getTeamStatsFromRankings = (name: string) => {
+    const activeRankings = localRankings && localRankings.length > 0 ? localRankings : rankings;
+    if (!activeRankings || activeRankings.length === 0) return null;
+    const r = activeRankings.find(t => isSameTeamLocal(t.name || t.teamName || '', name));
+    if (!r) return null;
+    const wins = Number(r.won) || 0;
+    const draws = Number(r.draw) || 0;
+    const losses = Number(r.lost) || 0;
+    const played = wins + draws + losses;
+    if (played === 0) return { v: 0, n: 0, d: 0, played: 0 };
+    
+    let v = Math.round((wins / played) * 100);
+    let n = Math.round((draws / played) * 100);
+    let d = Math.round((losses / played) * 100);
+    
+    const sum = v + n + d;
+    if (sum !== 100) {
+      const diff = 100 - sum;
+      if (v >= n && v >= d) v += diff;
+      else if (n >= v && n >= d) n += diff;
+      else d += diff;
+    }
+    
+    v = Math.max(0, Math.min(100, v));
+    n = Math.max(0, Math.min(100, n));
+    d = Math.max(0, Math.min(100, d));
+    
+    return {
+      v,
+      n,
+      d,
+      played: played
+    };
+  };
+
   useEffect(() => { 
     if (leagueIdRef.current !== leagueId) {
       setPendingMatches(new Map());
       setFinishedMatches([]);
       setLogs([]);
       setIsActive(false);
+      setLocalRankings([]);
     }
     leagueIdRef.current = leagueId; 
   }, [leagueId]);
@@ -120,11 +181,12 @@ export default function DataExtractionMenu({ leagueId = 1, rankings = [], onActi
       const data = await response.json();
       
       const rankDict: Record<string, number> = {};
-      if (data && data.teams) {
-        data.teams.forEach((team: any) => {
-          rankDict[team.name || team.teamName] = team.position;
-        });
-      }
+      const teamsList = data && data.teams ? data.teams : [];
+      setLocalRankings(teamsList);
+      
+      teamsList.forEach((team: any) => {
+        rankDict[team.name || team.teamName] = team.position;
+      });
       addLog('Ranking récupéré avec succès', 'success');
       return rankDict;
     } catch (error) {
@@ -277,6 +339,12 @@ export default function DataExtractionMenu({ leagueId = 1, rankings = [], onActi
             };
 
             const allOdds = extractAllOdds(m);
+            const rStart = r.expectedStart && !String(r.expectedStart).startsWith('0001') ? r.expectedStart : undefined;
+            const mStart = m.expectedStart && !String(m.expectedStart).startsWith('0001') ? m.expectedStart : rStart;
+            const finalExpectedStart = mStart ? String(mStart) : new Date().toISOString();
+
+            const homeForm = getTeamStatsFromRankings(homeStr) || undefined;
+            const awayForm = getTeamStatsFromRankings(awayStr) || undefined;
 
             newMatches.push({
               id, homeTeam: homeStr, awayTeam: awayStr,
@@ -288,7 +356,9 @@ export default function DataExtractionMenu({ leagueId = 1, rankings = [], onActi
               eventCategoryId: m.eventCategoryId || m.EventCategoryID || r.eventCategoryId || r.EventCategoryID || newCategoryId,
               updatedAt: new Date(),
               round,
-              expectedStart: m.expectedStart
+              expectedStart: finalExpectedStart,
+              homeFormWDLPct: homeForm,
+              awayFormWDLPct: awayForm
             });
           });
         });
@@ -479,13 +549,19 @@ export default function DataExtractionMenu({ leagueId = 1, rankings = [], onActi
   };
 
   const applyFinishedUpdates = (finishedUpdates: ExtractedMatch[]) => {
+    const enrichedUpdates = finishedUpdates.map(m => ({
+      ...m,
+      homeFormWDLPct: getTeamStatsFromRankings(m.homeTeam) || undefined,
+      awayFormWDLPct: getTeamStatsFromRankings(m.awayTeam) || undefined
+    }));
+
     setPendingMatches(prev => {
       const newMap = new Map(prev);
-      finishedUpdates.forEach(match => newMap.delete(match.id));
+      enrichedUpdates.forEach(match => newMap.delete(match.id));
       
       // Sauvegarde immédiate du nouvel état (pending restant + nouveaux finis)
       const pendingArray = Array.from(newMap.values());
-      const allToSave = pendingArray.concat(finishedUpdates).map(m => {
+      const allToSave = pendingArray.concat(enrichedUpdates).map(m => {
         const separator = m.score?.includes(':') ? ':' : '-';
         const [hS, aS] = (m.score || '-').split(separator);
         return {
@@ -505,7 +581,9 @@ export default function DataExtractionMenu({ leagueId = 1, rankings = [], onActi
           allOdds: m.allOdds,
           expectedStart: String(m.expectedStart || m.updatedAt.toISOString()),
           apiId: m.apiId,
-          updatedAt: new Date().toISOString()
+          updatedAt: new Date().toISOString(),
+          homeFormWDLPct: m.homeFormWDLPct || getTeamStatsFromRankings(m.homeTeam) || undefined,
+          awayFormWDLPct: m.awayFormWDLPct || getTeamStatsFromRankings(m.awayTeam) || undefined
         };
       });
       saveMatchesToLocal(allToSave as any).catch(err => console.error('[LocalSave] Error:', err));
@@ -514,7 +592,7 @@ export default function DataExtractionMenu({ leagueId = 1, rankings = [], onActi
     });
     
     setFinishedMatches(prev => {
-      const combined = [...finishedUpdates, ...prev];
+      const combined = [...enrichedUpdates, ...prev];
       const uniqueMap = new Map();
       combined.forEach(m => {
         if (!uniqueMap.has(m.id)) uniqueMap.set(m.id, m);
@@ -522,9 +600,9 @@ export default function DataExtractionMenu({ leagueId = 1, rankings = [], onActi
       return Array.from(uniqueMap.values());
     });
     
-    if (onMatchesFinished) onMatchesFinished(finishedUpdates);
+    if (onMatchesFinished) onMatchesFinished(enrichedUpdates);
 
-    finishedUpdates.forEach(match => {
+    enrichedUpdates.forEach(match => {
       addLog(`[PLAYOUT] Score extrait : ${match.homeTeam} ${match.score} ${match.awayTeam}`, 'success');
     });
   };
@@ -589,7 +667,6 @@ export default function DataExtractionMenu({ leagueId = 1, rankings = [], onActi
   const handleSyncToDB = useCallback(async () => {
     if (finishedMatches.length === 0 && pendingMatches.size === 0) return;
     
-    setIsSyncing(true);
     setSyncMessage("Synchronisation avec la base de données...");
     
     try {
@@ -629,7 +706,9 @@ export default function DataExtractionMenu({ leagueId = 1, rankings = [], onActi
           homePoints: null,
           awayPoints: null,
           status: m.status === 'finished' ? 'Finished' : 'Upcoming',
-          updatedAt: new Date().toISOString()
+          updatedAt: new Date().toISOString(),
+          homeFormWDLPct: m.homeFormWDLPct || getTeamStatsFromRankings(m.homeTeam) || undefined,
+          awayFormWDLPct: m.awayFormWDLPct || getTeamStatsFromRankings(m.awayTeam) || undefined
         };
       });
 
@@ -644,8 +723,6 @@ export default function DataExtractionMenu({ leagueId = 1, rankings = [], onActi
       setSyncMessage("Erreur lors de la synchronisation");
       addLog(`Erreur synchronisation : ${error.message}`, 'error');
       setTimeout(() => setSyncMessage(null), 5000);
-    } finally {
-      setIsSyncing(false);
     }
   }, [finishedMatches, pendingMatches, currentSeason, leagueId]);
 
@@ -667,15 +744,24 @@ export default function DataExtractionMenu({ leagueId = 1, rankings = [], onActi
       .sort((a, b) => (b.round || 0) - (a.round || 0))
       .map(m => {
         const matchDate = parseMatchDate(m.expectedStart) || m.updatedAt;
+        
+        // Formulate NVD strings from saved percentages or fallbacks
+        const hForm = m.homeFormWDLPct || getTeamStatsFromRankings(m.homeTeam);
+        const aForm = m.awayFormWDLPct || getTeamStatsFromRankings(m.awayTeam);
+
+        const hFormStr = hForm ? `${hForm.v}/${hForm.n}/${hForm.d}% (${hForm.played}m)` : '-';
+        const aFormStr = aForm ? `${aForm.v}/${aForm.n}/${aForm.d}% (${aForm.played}m)` : '-';
+
         return [
-        `Journée ${m.round || '-'}`,
-        matchDate ? matchDate.toLocaleString('fr-FR', { timeZone: 'Indian/Antananarivo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-',
-        `${m.homeTeam} (#${m.homeRank})`,
-        m.score || '-',
-        `${m.awayTeam} (#${m.awayRank})`,
-        m.result || '-',
-        `${m.odds1} | ${m.oddsX} | ${m.odds2}`
-      ]});
+          `Journée ${m.round || '-'}`,
+          matchDate ? matchDate.toLocaleString('fr-FR', { timeZone: 'Indian/Antananarivo', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-',
+          `${m.homeTeam} (#${m.homeRank})\nNVD: ${hFormStr}`,
+          m.score || '-',
+          `${m.awayTeam} (#${m.awayRank})\nNVD: ${aFormStr}`,
+          m.result || '-',
+          `${m.odds1} | ${m.oddsX} | ${m.odds2}`
+        ];
+      });
 
     // Génération du tableau
     autoTable(doc, {
@@ -683,7 +769,7 @@ export default function DataExtractionMenu({ leagueId = 1, rankings = [], onActi
       head: [['Journée', 'Date/Heure', 'Domicile', 'Score', 'Extérieur', 'Résultat', 'Cotes (1|X|2)']],
       body: tableData,
       theme: 'grid',
-      styles: { fontSize: 8, halign: 'center' },
+      styles: { fontSize: 8, halign: 'center', valign: 'middle' },
       headStyles: { fillColor: [79, 70, 229] }, // Indigo 600
       columnStyles: {
         2: { halign: 'left' },
@@ -774,27 +860,6 @@ export default function DataExtractionMenu({ leagueId = 1, rankings = [], onActi
         {/* COLONNE GAUCHE : Contrôles & Stats */}
         <div className="space-y-6">
           
-          {/* 1. Proxy Status */}
-          <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700/50">
-            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-              <Server className="w-4 h-4" /> Configuration du Proxy
-            </h3>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-slate-500">Route API:</span>
-                <span className="font-mono text-emerald-400">/api/data/league/*</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Headers:</span>
-                <span className="text-slate-300">Auto-injectés</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Statut Proxy:</span>
-                <span className="text-emerald-400 font-bold flex items-center gap-1"><CheckCircle2 className="w-3 h-3"/> Actif</span>
-              </div>
-            </div>
-          </div>
-
           {/* 2. Contrôles */}
           <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700/50">
             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
@@ -831,38 +896,12 @@ export default function DataExtractionMenu({ leagueId = 1, rankings = [], onActi
                 </button>
               </div>
               
-              <button
-                onClick={handleSyncToDB}
-                disabled={isSyncing || (finishedMatches.length === 0 && pendingMatches.size === 0)}
-                className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm font-bold py-2 px-4 rounded flex items-center justify-center gap-2 transition-colors shadow-lg shadow-indigo-900/20"
-              >
-                {isSyncing ? <Loader2 className="w-4 h-4 animate-spin" /> : <CloudUpload className="w-4 h-4" />}
-                Synchroniser avec la BD
-              </button>
-
               <div className="flex flex-col gap-2">
                 <button
                   onClick={handleReset}
                   className="w-full bg-slate-700 hover:bg-slate-600 text-white text-[10px] font-bold py-2.5 px-4 rounded flex items-center justify-center gap-2 transition-colors uppercase tracking-widest"
                 >
                   <List className="w-4 h-4" /> Reset Session
-                </button>
-
-                <button
-                  onClick={async () => {
-                    if (confirm('PURGE TOTALE (Vider la mémoire) : Voulez-vous supprimer INTÉGRALEMENT l\'archive locale (tous les matchs enregistrés) ?\n\nCette action est irréversible et redémarrera l\'application.\n\nNOTE: Si l\'archivage automatique est actif, les données reviendront.')) {
-                      try {
-                        const { purgeTotalDatabase } = await import('../services/localArchive');
-                        await purgeTotalDatabase();
-                        window.location.reload();
-                      } catch (err) {
-                        window.location.reload();
-                      }
-                    }
-                  }}
-                  className="w-full bg-rose-500/10 hover:bg-rose-500 text-rose-500 hover:text-white border border-rose-500/20 py-2.5 px-4 rounded text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2"
-                >
-                  <Trash2 className="w-4 h-4" /> Purge Totale
                 </button>
               </div>
             </div>
@@ -954,6 +993,9 @@ export default function DataExtractionMenu({ leagueId = 1, rankings = [], onActi
                     <div className="space-y-2">
                       {matches.map(match => {
                         const matchDate = parseMatchDate(match.expectedStart) || match.updatedAt;
+                        const hForm = getTeamStatsFromRankings(match.homeTeam);
+                        const aForm = getTeamStatsFromRankings(match.awayTeam);
+
                         return (
                         <div key={match.id} className="bg-slate-800 p-2 rounded border border-amber-500/30">
                           {matchDate && (
@@ -970,13 +1012,31 @@ export default function DataExtractionMenu({ leagueId = 1, rankings = [], onActi
                                 className="w-4 h-4 object-contain shrink-0" 
                                 onError={(e) => (e.currentTarget.style.display = 'none')}
                               />
-                              <span className="truncate">{match.homeTeam}</span>
+                              <div className="flex flex-col min-w-0">
+                                <span className="truncate">{match.homeTeam}</span>
+                                {hForm && (
+                                  <div className="flex gap-1 text-[9px] font-bold leading-tight">
+                                    <span className="text-emerald-500">{hForm.v}%</span>
+                                    <span className="text-amber-500">{hForm.n}%</span>
+                                    <span className="text-rose-500">{hForm.d}%</span>
+                                  </div>
+                                )}
+                              </div>
                               <span className="text-[10px] text-slate-500 shrink-0">#{match.homeRank}</span>
                             </span>
                             <span className="text-slate-500 mx-2 shrink-0">vs</span>
                             <span className="truncate flex items-center gap-1.5 flex-1 justify-end min-w-0">
                               <span className="text-[10px] text-slate-500 shrink-0">#{match.awayRank}</span>
-                              <span className="truncate">{match.awayTeam}</span>
+                              <div className="flex flex-col items-end min-w-0">
+                                <span className="truncate text-right">{match.awayTeam}</span>
+                                {aForm && (
+                                  <div className="flex gap-1 text-[9px] font-bold leading-tight">
+                                    <span className="text-emerald-500">{aForm.v}%</span>
+                                    <span className="text-amber-500">{aForm.n}%</span>
+                                    <span className="text-rose-500">{aForm.d}%</span>
+                                  </div>
+                                )}
+                              </div>
                               <img 
                                 src={getTeamLogo(match.awayTeam)} 
                                 alt="" 
@@ -1037,20 +1097,8 @@ export default function DataExtractionMenu({ leagueId = 1, rankings = [], onActi
                       {matches.map(match => {
                         const matchDate = parseMatchDate(match.expectedStart) || match.updatedAt;
                         
-                        const getTeamStats = (name: string) => {
-                          const r = rankings.find(t => (t.name || t.teamName) === name);
-                          if (!r) return null;
-                          const played = (Number(r.won) || 0) + (Number(r.draw) || 0) + (Number(r.lost) || 0);
-                          if (played === 0) return { win: 0, draw: 0, loss: 0 };
-                          return {
-                            win: Math.round((Number(r.won) / played) * 100),
-                            draw: Math.round((Number(r.draw) / played) * 100),
-                            loss: Math.round((Number(r.lost) / played) * 100)
-                          };
-                        };
-
-                        const hStats = getTeamStats(match.homeTeam);
-                        const aStats = getTeamStats(match.awayTeam);
+                        const hStats = getTeamStatsFromRankings(match.homeTeam);
+                        const aStats = getTeamStatsFromRankings(match.awayTeam);
 
                         return (
                         <div key={match.id} className="bg-slate-800/50 p-2 rounded border border-emerald-500/20">
@@ -1072,9 +1120,9 @@ export default function DataExtractionMenu({ leagueId = 1, rankings = [], onActi
                                 <span className="truncate">{match.homeTeam}</span>
                                 {hStats && (
                                   <div className="flex gap-1 text-[9px] font-bold leading-tight">
-                                    <span className="text-emerald-500">{hStats.win}%</span>
-                                    <span className="text-amber-500">{hStats.draw}%</span>
-                                    <span className="text-rose-500">{hStats.loss}%</span>
+                                    <span className="text-emerald-500">{hStats.v}%</span>
+                                    <span className="text-amber-500">{hStats.n}%</span>
+                                    <span className="text-rose-500">{hStats.d}%</span>
                                   </div>
                                 )}
                               </div>
@@ -1087,9 +1135,9 @@ export default function DataExtractionMenu({ leagueId = 1, rankings = [], onActi
                                 <span className="truncate text-right">{match.awayTeam}</span>
                                 {aStats && (
                                   <div className="flex gap-1 text-[9px] font-bold leading-tight">
-                                    <span className="text-emerald-500">{aStats.win}%</span>
-                                    <span className="text-amber-500">{aStats.draw}%</span>
-                                    <span className="text-rose-500">{aStats.loss}%</span>
+                                    <span className="text-emerald-500">{aStats.v}%</span>
+                                    <span className="text-amber-500">{aStats.n}%</span>
+                                    <span className="text-rose-500">{aStats.d}%</span>
                                   </div>
                                 )}
                               </div>

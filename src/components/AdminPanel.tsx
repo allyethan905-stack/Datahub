@@ -43,11 +43,17 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
   const [scraperLogs, setScraperLogs] = useState<any[]>([]);
   const [enabledLeagues, setEnabledLeagues] = useState<number[]>([]);
 
-  const handleDeleteAll = async () => {
+  // Confirmation Modal States
+  const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+
+  const handleDeleteAll = () => {
+    setConfirmDeleteAll(true);
+  };
+
+  const executeDeleteAll = async () => {
+    setConfirmDeleteAll(false);
     const leagueName = selectedLeague === 'all' ? 'tous les championnats' : LEAGUES.find(l => l.id === selectedLeague)?.name;
-    
-    if (!window.confirm(`Êtes-vous sûr de vouloir formater ${leagueName} ? Cette action supprimera les données de la base de données principale (Supabase).`)) return;
-    
     setActionLoading(true);
     setError(null);
     try {
@@ -239,8 +245,12 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
     }
   };
 
-  const handleDelete = async (matchId: string) => {
-    if (!window.confirm("Êtes-vous sûr de vouloir supprimer ce match ?")) return;
+  const handleDelete = (matchId: string) => {
+    setConfirmDeleteId(matchId);
+  };
+
+  const executeDelete = async (matchId: string) => {
+    setConfirmDeleteId(null);
     setActionLoading(true);
     try {
       const res = await fetch(`/api/admin/matches/${matchId}`, { method: 'DELETE' });
@@ -883,6 +893,82 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Format/Delete All Confirmation Modal */}
+      {confirmDeleteAll && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+          <div className="w-full max-w-sm bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-start gap-3">
+              <div className="p-2.5 rounded-lg shrink-0 bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                <AlertCircle className="w-5 h-5 animate-pulse" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-xs font-black text-slate-100 uppercase tracking-wider">
+                  Formater le Championnat
+                </h3>
+                <p className="text-[10px] text-slate-300 leading-relaxed font-medium">
+                  Êtes-vous sûr de vouloir formater <strong className="text-white font-black">{selectedLeague === 'all' ? 'tous les championnats' : LEAGUES.find(l => l.id === selectedLeague)?.name}</strong> ? Cette action supprimera définitivement toutes les données correspondantes de Supabase.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setConfirmDeleteAll(false)}
+                className="px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-750 text-slate-300 text-[9px] uppercase font-bold tracking-wider transition-all"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={executeDeleteAll}
+                className="px-3 py-1.5 rounded bg-rose-600 hover:bg-rose-500 text-white text-[9px] uppercase font-black tracking-wider transition-all shadow-md shadow-rose-600/15"
+              >
+                Confirmer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Single Delete Confirmation Modal */}
+      {confirmDeleteId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+          <div className="w-full max-w-sm bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-start gap-3">
+              <div className="p-2.5 rounded-lg shrink-0 bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-xs font-black text-slate-100 uppercase tracking-wider">
+                  Supprimer le match
+                </h3>
+                <p className="text-[10px] text-slate-300 leading-relaxed font-medium">
+                  Voulez-vous vraiment supprimer ce match de la base de données ? Cette action est irréversible.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setConfirmDeleteId(null)}
+                className="px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-750 text-slate-300 text-[9px] uppercase font-bold tracking-wider transition-all"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={() => executeDelete(confirmDeleteId)}
+                className="px-3 py-1.5 rounded bg-rose-600 hover:bg-rose-500 text-white text-[9px] uppercase font-black tracking-wider transition-all shadow-md shadow-rose-600/15"
+              >
+                Confirmer
+              </button>
+            </div>
           </div>
         </div>
       )}
